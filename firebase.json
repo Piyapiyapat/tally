@@ -1,0 +1,21 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "tally-app-5a100",
+          "appId": "1:681803928165:android:2a4d7372f32df62e91ec8c",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "tally-app-5a100",
+          "configurations": {
+            "android": "1:681803928165:android:2a4d7372f32df62e91ec8c"
+          }
+        }
+      }
+    }
+  }
+}
