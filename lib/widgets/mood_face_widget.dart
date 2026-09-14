@@ -22,15 +22,18 @@ class MoodFaceWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    final moodColor = moodColorFor(value);
     return Container(
       width: size,
       height: size,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: isSelected ? colors.mint : colors.surfaceFlat,
+        color: isSelected
+            ? moodColor
+            : moodColorSoftFor(value, colors.brightness),
         border: Border.all(
-          color: isSelected ? colors.mint : colors.border,
+          color: isSelected ? moodColor : moodColor.withValues(alpha: 0.5),
           width: 1.5,
         ),
       ),
@@ -39,7 +42,7 @@ class MoodFaceWidget extends StatelessWidget {
         child: FaIcon(
           moodIconFor(value),
           size: size * 0.5,
-          color: isSelected ? colors.onMint : colors.textDim,
+          color: isSelected ? Colors.white : moodColor,
         ),
       ),
     );

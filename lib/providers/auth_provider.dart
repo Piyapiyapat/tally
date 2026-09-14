@@ -13,6 +13,12 @@ class AuthProvider extends ChangeNotifier {
   bool _isSyncing = false;
   String? _errorMessage;
 
+  // Set on an explicit sign-out or account deletion so the app can drop back
+  // to WelcomeScreen instead of continuing to show AppShell with the local
+  // data that clearAllUserData() just wiped. A guest who never signed in
+  // never sets this, so they're unaffected.
+  bool _justSignedOut = false;
+
   VoidCallback? onDataSynced;
 
   AuthProvider() {
@@ -44,7 +50,15 @@ class AuthProvider extends ChangeNotifier {
   bool get isGoogleUser => _authService.isGoogleUser;
   bool get isLoading => _isLoading;
   bool get isSyncing => _isSyncing;
+  bool get justSignedOut => _justSignedOut;
   String? get errorMessage => _errorMessage;
+
+  /// Called once the post-sign-out WelcomeScreen gate has been dismissed
+  /// (signed back in, or chose "Continue as Guest" again).
+  void acknowledgeSignedOut() {
+    _justSignedOut = false;
+    notifyListeners();
+  }
 
   Future<bool> signUp(String email, String password) async {
     _setLoading(true);
@@ -108,7 +122,9 @@ class AuthProvider extends ChangeNotifier {
   Future<void> signOut() async {
     await _authService.signOut();
     await DbService.clearAllUserData();
+    _justSignedOut = true;
     onDataSynced?.call();
+    notifyListeners();
   }
 
   /// ลบบัญชีถาวร: reauth -> ลบข้อมูลบน Firestore -> ลบ Firebase user -> ล้าง local
@@ -131,7 +147,9 @@ class AuthProvider extends ChangeNotifier {
       await AppLockService.clearPin();
       await DbService.setAppLockEnabled(false);
       await DbService.setAppLockBiometricEnabled(false);
+      _justSignedOut = true;
       onDataSynced?.call();
+      notifyListeners();
       return null;
     } on FirebaseAuthException catch (e) {
       return _mapError(e);

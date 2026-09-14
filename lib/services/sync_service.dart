@@ -2,12 +2,14 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
 import '../models/habit.dart';
 import '../models/habit_log.dart';
 import '../models/journal_entry.dart';
 import '../models/mood_entry.dart';
+import '../theme/app_colors.dart';
 import 'db_service.dart';
 
 class SyncService {
@@ -147,7 +149,67 @@ class SyncService {
       _mergeJournals(),
       _mergeProfile(),
       _mergeCustomTags(),
+      _mergeSettings(),
     ]);
+  }
+
+  // ── Settings: appearance + reminders (app lock is deliberately excluded —
+  // it's a device-level security setting, not something to carry over) ──
+  // Lives as fields on the `users/{uid}` doc, same as profile/tags.
+  static Future<void> pushSettings() async {
+    if (_uid == null) return;
+    final reminderTime = DbService.getReminderTime();
+    await FirebaseFirestore.instance.collection('users').doc(_uid).set({
+      'themeMode': DbService.getThemeMode().name,
+      'appPalette': DbService.getAppPalette().name,
+      'reminderEnabled': DbService.getReminderEnabled(),
+      'reminderHour': reminderTime.hour,
+      'reminderMinute': reminderTime.minute,
+    }, SetOptions(merge: true));
+  }
+
+  /// Restores appearance/reminder settings from the cloud for whichever of
+  /// them this device has never explicitly set (fresh install, new device)
+  /// — otherwise pushes whatever's already local, same merge direction as
+  /// [_mergeProfile] and [_mergeCustomTags].
+  static Future<void> _mergeSettings() async {
+    if (_uid == null) return;
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(_uid)
+        .get();
+    final cloud = doc.data();
+
+    if (!DbService.isThemeModeSet() && cloud?['themeMode'] is String) {
+      try {
+        await DbService.setThemeMode(
+          ThemeMode.values.byName(cloud!['themeMode'] as String),
+        );
+      } catch (_) {}
+    }
+    if (!DbService.isAppPaletteSet() && cloud?['appPalette'] is String) {
+      try {
+        await DbService.setAppPalette(
+          AppPalette.values.byName(cloud!['appPalette'] as String),
+        );
+      } catch (_) {}
+    }
+    if (!DbService.isReminderEnabledSet() &&
+        cloud?['reminderEnabled'] is bool) {
+      await DbService.setReminderEnabled(cloud!['reminderEnabled'] as bool);
+    }
+    if (!DbService.isReminderTimeSet() &&
+        cloud?['reminderHour'] is num &&
+        cloud?['reminderMinute'] is num) {
+      await DbService.setReminderTime(
+        TimeOfDay(
+          hour: (cloud!['reminderHour'] as num).toInt(),
+          minute: (cloud['reminderMinute'] as num).toInt(),
+        ),
+      );
+    }
+
+    await pushSettings();
   }
 
   // ── Custom journal tags ─────────────────────────────────
@@ -155,10 +217,9 @@ class SyncService {
   // it's a single small list, not a keyed collection.
   static Future<void> pushCustomTags(List<String> tags) async {
     if (_uid == null) return;
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(_uid)
-        .set({'customJournalTags': tags}, SetOptions(merge: true));
+    await FirebaseFirestore.instance.collection('users').doc(_uid).set({
+      'customJournalTags': tags,
+    }, SetOptions(merge: true));
   }
 
   /// Restores custom tags from the cloud when this device doesn't have any

@@ -75,6 +75,11 @@ class DbService {
   static Future<void> setThemeMode(ThemeMode mode) async =>
       await settingsBox.put('themeMode', mode.name);
 
+  // Whether this device has ever explicitly set these — as opposed to just
+  // reading the applied default — so cloud sync can tell "never touched,
+  // safe to adopt the cloud's value" apart from "deliberately set locally".
+  static bool isThemeModeSet() => settingsBox.containsKey('themeMode');
+
   static AppPalette getAppPalette() {
     switch (settingsBox.get('appPalette')) {
       case 'pink':
@@ -92,6 +97,8 @@ class DbService {
 
   static Future<void> setAppPalette(AppPalette palette) async =>
       await settingsBox.put('appPalette', palette.name);
+
+  static bool isAppPaletteSet() => settingsBox.containsKey('appPalette');
 
   // Whether the user has made it past the first-launch Guest/Sign-up
   // choice screen. Checked once at startup; never re-shown after this
@@ -121,6 +128,9 @@ class DbService {
   static Future<void> setReminderEnabled(bool enabled) async =>
       await settingsBox.put('reminderEnabled', enabled.toString());
 
+  static bool isReminderEnabledSet() =>
+      settingsBox.containsKey('reminderEnabled');
+
   // ── App lock ────────────────────────────────────────────
   // The PIN itself lives in secure storage (see AppLockService); these are
   // just the on/off flags, no more sensitive than any other preference.
@@ -147,6 +157,8 @@ class DbService {
     await settingsBox.put('reminderHour', time.hour.toString());
     await settingsBox.put('reminderMinute', time.minute.toString());
   }
+
+  static bool isReminderTimeSet() => settingsBox.containsKey('reminderHour');
 
   // ── Mood ──────────────────────────────────────────────
   static Future<void> saveMood(MoodEntry entry) async =>

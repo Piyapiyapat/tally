@@ -589,14 +589,14 @@ class _HomeScreenState extends State<HomeScreen> {
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: colors.mintSoft,
+                color: moodColorFor(entry.mood),
               ),
               child: BouncyMoodIcon(
                 moodKey: entry.id,
                 child: FaIcon(
                   moodIconFor(entry.mood),
                   size: 20,
-                  color: colors.accent,
+                  color: Colors.white,
                 ),
               ),
             ),
@@ -771,22 +771,18 @@ class _MoodHistoryStrip extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: entry != null ? colors.mintSoft : Colors.transparent,
-              border: Border.all(
-                color: isToday
-                    ? colors.mint
-                    : entry != null
-                    ? Colors.transparent
-                    : colors.border,
-                width: isToday ? 1.5 : 1,
-              ),
+              color: entry != null
+                  ? moodColorFor(entry.mood)
+                  : Colors.transparent,
+              border: entry != null
+                  ? null
+                  : Border.all(
+                      color: isToday ? colors.mint : colors.border,
+                      width: isToday ? 1.5 : 1,
+                    ),
             ),
             child: entry != null
-                ? FaIcon(
-                    moodIconFor(entry.mood),
-                    size: 20,
-                    color: colors.accent,
-                  )
+                ? FaIcon(moodIconFor(entry.mood), size: 20, color: Colors.white)
                 : null,
           ),
           const SizedBox(height: 4),

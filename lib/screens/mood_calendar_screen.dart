@@ -362,7 +362,10 @@ class _MoodCalendarScreenState extends State<MoodCalendarScreen> {
                             color: isToday
                                 ? colors.border
                                 : entry != null
-                                ? colors.mintSoft
+                                ? moodColorSoftFor(
+                                    entry.mood,
+                                    colors.brightness,
+                                  )
                                 : Colors.transparent,
                             borderRadius: BorderRadius.circular(10),
                             border: isToday
@@ -387,7 +390,7 @@ class _MoodCalendarScreenState extends State<MoodCalendarScreen> {
                                 FaIcon(
                                   moodIconFor(entry.mood),
                                   size: 18,
-                                  color: colors.accent,
+                                  color: moodColorFor(entry.mood),
                                 ),
                               ],
                             ],
@@ -475,12 +478,15 @@ class _MoodCalendarScreenState extends State<MoodCalendarScreen> {
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: colors.mintSoft,
+                          color: moodColorSoftFor(
+                            entry.mood,
+                            colors.brightness,
+                          ),
                         ),
                         child: FaIcon(
                           moodIconFor(entry.mood),
                           size: 28,
-                          color: colors.accent,
+                          color: moodColorFor(entry.mood),
                         ),
                       ),
                       const SizedBox(width: 16),

@@ -831,7 +831,7 @@ class _JournalCard extends StatelessWidget {
                         child: FaIcon(
                           moodIconFor(mood.mood),
                           size: 16,
-                          color: colors.accent,
+                          color: moodColorFor(mood.mood),
                         ),
                       ),
                     );

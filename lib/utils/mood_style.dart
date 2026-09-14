@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 /// Optional quick-tap "what's affecting this" tags shown under the mood
@@ -38,6 +39,35 @@ FaIconData moodIconFor(int mood) {
     default:
       return FontAwesomeIcons.faceMeh;
   }
+}
+
+/// A fixed red-to-green sentiment scale, one color per mood level —
+/// deliberately independent of the selected [AppPalette] so "terrible"
+/// always reads as red and "great" always reads as green, no matter which
+/// accent color the user has picked in Settings.
+Color moodColorFor(int mood) {
+  switch (mood) {
+    case 1:
+      return const Color(0xFFD65C4F);
+    case 2:
+      return const Color(0xFFE0894A);
+    case 3:
+      return const Color(0xFFCDA23A);
+    case 4:
+      return const Color(0xFF8FB96B);
+    case 5:
+      return const Color(0xFF3F9463);
+    default:
+      return const Color(0xFFCDA23A);
+  }
+}
+
+/// Tinted background version of [moodColorFor], for badges/pills that hold
+/// a mood icon — same idea as [AppColors.mintSoft] but per-mood.
+Color moodColorSoftFor(int mood, Brightness brightness) {
+  return moodColorFor(
+    mood,
+  ).withValues(alpha: brightness == Brightness.dark ? 0.22 : 0.30);
 }
 
 String moodLabelFor(int mood) {

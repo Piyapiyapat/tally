@@ -533,6 +533,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Widget _moodCountRow(int mood, int count) {
+    final colors = context.colors;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: moodColorFor(mood),
+            ),
+            child: FaIcon(moodIconFor(mood), size: 14, color: Colors.white),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              _moodLabel(mood),
+              style: GoogleFonts.nunito(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: colors.accent,
+              ),
+            ),
+          ),
+          Text(
+            '$count',
+            style: GoogleFonts.nunito(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: colors.deep,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showMoodLogsDetail(BuildContext context, int total) {
     final counts = {for (var m = 1; m <= 5; m++) m: 0};
     for (final entry in DbService.moodBox.values) {
@@ -545,7 +585,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: [
         _detailRow('Total logged', '$total'),
         const SizedBox(height: 8),
-        for (var m = 5; m >= 1; m--) _detailRow(_moodLabel(m), '${counts[m]}'),
+        for (var m = 5; m >= 1; m--) _moodCountRow(m, counts[m] ?? 0),
       ],
       actionLabel: 'View mood calendar',
       onAction: () => Navigator.push(
@@ -826,7 +866,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   if (!auth.isEmailVerified) ...[
                                     const SizedBox(height: 8),
                                     Text(
-                                      'Email not verified yet â€” check your inbox',
+                                      'Email not verified yet — check your inbox',
                                       style: GoogleFonts.nunito(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w500,

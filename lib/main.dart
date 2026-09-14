@@ -15,6 +15,7 @@ import 'app_shell.dart';
 import 'screens/lock_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/sync_loading_screen.dart';
+import 'screens/welcome_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -103,6 +104,14 @@ class _SyncBootstrapperState extends State<_SyncBootstrapper> {
         context.read<HabitProvider>().loadHabits();
         context.read<MoodProvider>().loadMood();
         context.read<JournalProvider>().loadJournals();
+        context.read<ThemeProvider>().reload();
+        if (DbService.getReminderEnabled()) {
+          await NotificationService.scheduleDailyReminder(
+            DbService.getReminderTime(),
+          );
+        } else {
+          await NotificationService.cancelReminder();
+        }
         await _rescheduleHabitReminders();
       };
     });
@@ -115,10 +124,17 @@ class _SyncBootstrapperState extends State<_SyncBootstrapper> {
         onContinue: () => setState(() => _needsOnboarding = false),
       );
     }
+    final auth = context.watch<AuthProvider>();
+    // An explicit sign-out (or account deletion) just wiped local data —
+    // drop back to the welcome choice instead of showing AppShell with
+    // nothing in it, until they sign back in or pick Guest again.
+    if (auth.justSignedOut) {
+      return WelcomeScreen(onContinue: auth.acknowledgeSignedOut);
+    }
     // Block on the initial cloud sync rather than showing the app with
     // stale/default local data that then visibly flips to the real thing
     // a moment later.
-    if (context.watch<AuthProvider>().isSyncing) {
+    if (auth.isSyncing) {
       return const SyncLoadingScreen();
     }
     return widget.child;

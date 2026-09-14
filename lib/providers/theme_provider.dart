@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/db_service.dart';
+import '../services/sync_service.dart';
 import '../theme/app_colors.dart';
 
 class ThemeProvider extends ChangeNotifier {
@@ -14,6 +16,7 @@ class ThemeProvider extends ChangeNotifier {
     _mode = mode;
     notifyListeners();
     await DbService.setThemeMode(mode);
+    unawaited(SyncService.pushSettings());
   }
 
   Future<void> setPalette(AppPalette palette) async {
@@ -21,5 +24,14 @@ class ThemeProvider extends ChangeNotifier {
     _palette = palette;
     notifyListeners();
     await DbService.setAppPalette(palette);
+    unawaited(SyncService.pushSettings());
+  }
+
+  /// Re-reads from Hive after a cloud merge may have filled in a theme/
+  /// palette this device never had set locally.
+  void reload() {
+    _mode = DbService.getThemeMode();
+    _palette = DbService.getAppPalette();
+    notifyListeners();
   }
 }

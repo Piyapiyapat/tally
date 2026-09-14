@@ -331,7 +331,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                     colors,
                     label: 'Best day',
                     entry: bw.best,
-                    accentColor: colors.accent,
+                    accentColor: moodColorFor(bw.best.mood),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -340,7 +340,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                     colors,
                     label: 'Worst day',
                     entry: bw.worst,
-                    accentColor: colors.accent,
+                    accentColor: moodColorFor(bw.worst.mood),
                   ),
                 ),
               ],
@@ -390,7 +390,11 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 padding: const EdgeInsets.only(bottom: 10),
                 child: Row(
                   children: [
-                    FaIcon(moodIconFor(mood), size: 20, color: colors.accent),
+                    FaIcon(
+                      moodIconFor(mood),
+                      size: 20,
+                      color: moodColorFor(mood),
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
@@ -407,7 +411,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                       style: GoogleFonts.nunito(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: colors.accent,
+                        color: moodColorFor(mood),
                       ),
                     ),
                   ],
@@ -466,8 +470,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                               (points[i].value! - 1) /
                                   4 *
                                   (maxHeight - minHeight),
-                    isBest: points[i].value != null &&
-                        points[i].value == bestValue,
+                    isBest:
+                        points[i].value != null && points[i].value == bestValue,
                   ),
               ],
             ),
@@ -507,16 +511,15 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
           alignment: Alignment.topCenter,
           padding: const EdgeInsets.only(top: 6),
           decoration: BoxDecoration(
-            color: hasValue
-                ? (isBest ? colors.accent : colors.mint)
-                : colors.surfaceFlat,
+            color: hasValue ? moodColorFor(value.round()) : colors.surfaceFlat,
             borderRadius: BorderRadius.circular(15),
+            border: isBest ? Border.all(color: colors.deep, width: 2) : null,
           ),
           child: hasValue
               ? FaIcon(
                   moodIconFor(value.round()),
                   size: 16,
-                  color: isBest ? colors.onAccent : colors.onMint,
+                  color: Colors.white,
                 )
               : null,
         ),
@@ -641,8 +644,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                       dotData: FlDotData(
                         getDotPainter: (spot, percent, bar, index) =>
                             FlDotCirclePainter(
-                              radius: 3,
-                              color: colors.accent,
+                              radius: 4,
+                              color: moodColorFor(spot.y.round()),
                               strokeWidth: 2,
                               strokeColor: colors.surface,
                             ),

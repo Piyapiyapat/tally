@@ -8,19 +8,23 @@ your mood, your habits, and what you wrote about them.
 
 ## Features
 
-- **Mood tracking** — log how you're feeling each day with a quick note, and
-  browse past entries on a calendar view.
+- **Mood tracking** — log how you're feeling each day with a quick note, browse
+  past entries on a calendar view, and spot each mood at a glance with its own
+  color (red through green).
 - **Habits** — create habits, check them off day by day, and build streaks.
 - **Journal** — write dated entries, organize them with custom tags (up to
   20), and find your way back to them by month.
 - **Insights** — charts and stats that surface patterns across mood, habits,
   and journaling over time.
 - **Cloud sync** — sign in with email/password or Google; your habits, moods,
-  journal entries, tags, and profile sync to Firestore so nothing is lost on
-  reinstall or when switching devices.
+  journal entries, tags, profile, and app settings (theme and reminders) sync
+  to Firestore so nothing is lost on reinstall or when switching devices.
+  Signing out clears the device and returns you to the welcome screen; your
+  data is safe in the cloud until you sign back in.
 - **Themes** — five color palettes (forest, pink, blue, lavender, sunset),
   each with a light and dark variant.
-- **Privacy** — optional PIN or biometric app lock.
+- **Privacy** — optional PIN or biometric app lock (device-only; it doesn't
+  sync between devices).
 - **Export** — generate a PDF summary of your data to share or keep.
 - **Onboarding** — a short animated walkthrough for first-time users.
 

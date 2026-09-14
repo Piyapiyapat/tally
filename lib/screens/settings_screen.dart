@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -6,6 +7,7 @@ import '../providers/theme_provider.dart';
 import '../services/app_lock_service.dart';
 import '../services/db_service.dart';
 import '../services/notification_service.dart';
+import '../services/sync_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import 'manage_tags_screen.dart';
@@ -76,7 +78,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               'Notifications are blocked — enable them for Tally in your '
               "phone's settings to use reminders.",
               style: GoogleFonts.nunito(
-                  fontWeight: FontWeight.w600, color: colors.onError),
+                fontWeight: FontWeight.w600,
+                color: colors.onError,
+              ),
             ),
             backgroundColor: colors.error,
           ),
@@ -88,6 +92,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await NotificationService.cancelReminder();
     }
     await DbService.setReminderEnabled(enabled);
+    unawaited(SyncService.pushSettings());
     if (!mounted) return;
     setState(() => _reminderEnabled = enabled);
   }
@@ -106,6 +111,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
     if (picked == null) return;
     await DbService.setReminderTime(picked);
+    unawaited(SyncService.pushSettings());
     if (_reminderEnabled) {
       await NotificationService.scheduleDailyReminder(picked);
     }
@@ -312,7 +318,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           content: Text(
             'Account deleted',
             style: GoogleFonts.nunito(
-                fontWeight: FontWeight.w600, color: colors.onAccent),
+              fontWeight: FontWeight.w600,
+              color: colors.onAccent,
+            ),
           ),
           backgroundColor: colors.accent,
         ),
@@ -343,9 +351,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           child: Column(
             children: [
-              Icon(icon,
-                  size: 20,
-                  color: isSelected ? colors.onAccent : colors.accent),
+              Icon(
+                icon,
+                size: 20,
+                color: isSelected ? colors.onAccent : colors.accent,
+              ),
               const SizedBox(height: 4),
               Text(
                 label,
@@ -422,11 +432,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: colors.background,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new,
-            color: colors.deep,
-            size: 20,
-          ),
+          icon: Icon(Icons.arrow_back_ios_new, color: colors.deep, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -464,23 +470,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Row(
                     children: [
                       _themeModeButton(
-                          context,
-                          colors,
-                          themeProvider,
-                          ThemeMode.light,
-                          Icons.light_mode_outlined,
-                          'Light'),
-                      const SizedBox(width: 10),
-                      _themeModeButton(context, colors, themeProvider,
-                          ThemeMode.dark, Icons.dark_mode_outlined, 'Dark'),
+                        context,
+                        colors,
+                        themeProvider,
+                        ThemeMode.light,
+                        Icons.light_mode_outlined,
+                        'Light',
+                      ),
                       const SizedBox(width: 10),
                       _themeModeButton(
-                          context,
-                          colors,
-                          themeProvider,
-                          ThemeMode.system,
-                          Icons.settings_suggest_outlined,
-                          'System'),
+                        context,
+                        colors,
+                        themeProvider,
+                        ThemeMode.dark,
+                        Icons.dark_mode_outlined,
+                        'Dark',
+                      ),
+                      const SizedBox(width: 10),
+                      _themeModeButton(
+                        context,
+                        colors,
+                        themeProvider,
+                        ThemeMode.system,
+                        Icons.settings_suggest_outlined,
+                        'System',
+                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -491,8 +505,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     spacing: 12,
                     runSpacing: 12,
                     children: AppPalette.values
-                        .map((palette) => _paletteSwatch(
-                            context, colors, themeProvider, palette))
+                        .map(
+                          (palette) => _paletteSwatch(
+                            context,
+                            colors,
+                            themeProvider,
+                            palette,
+                          ),
+                        )
                         .toList(),
                   ),
                 ],
@@ -565,8 +585,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       onTap: _pickReminderTime,
                       child: Row(
                         children: [
-                          Icon(Icons.access_time,
-                              size: 18, color: colors.accent),
+                          Icon(
+                            Icons.access_time,
+                            size: 18,
+                            color: colors.accent,
+                          ),
                           const SizedBox(width: 8),
                           Text(
                             'Reminder time',
@@ -586,8 +609,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                           ),
                           const SizedBox(width: 4),
-                          Icon(Icons.chevron_right,
-                              size: 18, color: colors.accent),
+                          Icon(
+                            Icons.chevron_right,
+                            size: 18,
+                            color: colors.accent,
+                          ),
                         ],
                       ),
                     ),
@@ -673,8 +699,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                           ),
                           const Spacer(),
-                          Icon(Icons.chevron_right,
-                              size: 18, color: colors.accent),
+                          Icon(
+                            Icons.chevron_right,
+                            size: 18,
+                            color: colors.accent,
+                          ),
                         ],
                       ),
                     ),
@@ -699,10 +728,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             onChanged: _setBiometricEnabled,
                             activeTrackColor: colors.accent,
                             thumbColor: WidgetStateProperty.resolveWith(
-                              (states) =>
-                                  states.contains(WidgetState.selected)
-                                      ? colors.onAccent
-                                      : colors.textDim,
+                              (states) => states.contains(WidgetState.selected)
+                                  ? colors.onAccent
+                                  : colors.textDim,
                             ),
                           ),
                         ],
