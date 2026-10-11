@@ -23,7 +23,9 @@ class MoodFaceWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final moodColor = moodColorFor(value);
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 320),
+      curve: Curves.easeOutCubic,
       width: size,
       height: size,
       alignment: Alignment.center,

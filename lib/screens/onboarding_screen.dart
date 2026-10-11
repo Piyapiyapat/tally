@@ -1,43 +1,48 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
+import '../utils/mood_style.dart';
+import '../widgets/icon_badge.dart';
+import '../widgets/mood_face_widget.dart';
 import 'welcome_screen.dart';
 
 class _OnboardingSlide {
-  final IconData icon;
+  final Widget preview;
   final String title;
   final String description;
   const _OnboardingSlide({
-    required this.icon,
+    required this.preview,
     required this.title,
     required this.description,
   });
 }
 
-const _slides = [
+final _slides = [
   _OnboardingSlide(
-    icon: Icons.mood_outlined,
+    preview: const _MoodPreview(),
     title: 'Track your mood',
     description:
         'Log how you\'re feeling each day, add a quick note, and start '
         'noticing the patterns behind your good and bad days.',
   ),
   _OnboardingSlide(
-    icon: Icons.repeat_outlined,
+    preview: const _HabitsPreview(),
     title: 'Build better habits',
     description:
         'Create the habits you want to stick with, and check them off '
-        'as you go — see your streaks build day by day.',
+        'as you go — see them build up day by day.',
   ),
   _OnboardingSlide(
-    icon: Icons.menu_book_outlined,
+    preview: const _JournalPreview(),
     title: 'Write it down',
     description:
         'Keep a journal of your thoughts and days, tagged and organized '
         'by month so you can always find your way back to them.',
   ),
   _OnboardingSlide(
-    icon: Icons.insights_outlined,
+    preview: const _InsightsPreview(),
     title: 'See your patterns',
     description:
         'Insights connect the dots between your mood, habits, and '
@@ -47,7 +52,9 @@ const _slides = [
 
 /// Shown once, right before [WelcomeScreen], to give a first-time user a
 /// quick tour of the app's four core features before asking them to choose
-/// an account path.
+/// an account path. Each slide previews the real feature (a mood pick, a
+/// habit list, a journal entry, a trend chart) with the app's actual
+/// colors/icons/components, rather than a generic icon badge.
 class OnboardingScreen extends StatefulWidget {
   final VoidCallback onContinue;
   const OnboardingScreen({super.key, required this.onContinue});
@@ -137,7 +144,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         var offset = (_page - i).toDouble();
                         if (_pageController.hasClients &&
                             _pageController.position.haveDimensions) {
-                          offset = (_pageController.page ?? _page.toDouble()) - i;
+                          offset =
+                              (_pageController.page ?? _page.toDouble()) - i;
                         }
                         final distance = offset.abs().clamp(0.0, 1.0);
                         return Opacity(
@@ -220,8 +228,7 @@ class _SlideView extends StatefulWidget {
   State<_SlideView> createState() => _SlideViewState();
 }
 
-class _SlideViewState extends State<_SlideView>
-    with TickerProviderStateMixin {
+class _SlideViewState extends State<_SlideView> with TickerProviderStateMixin {
   late final _entrance = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 700),
@@ -231,7 +238,7 @@ class _SlideViewState extends State<_SlideView>
     duration: const Duration(milliseconds: 2400),
   )..repeat(reverse: true);
 
-  late final _iconScale = CurvedAnimation(
+  late final _previewScale = CurvedAnimation(
     parent: _entrance,
     curve: const Interval(0.0, 0.75, curve: Curves.easeOutBack),
   );
@@ -239,9 +246,10 @@ class _SlideViewState extends State<_SlideView>
     parent: _entrance,
     curve: const Interval(0.35, 1.0, curve: Curves.easeOut),
   );
-  late final _floatOffset = Tween(begin: -7.0, end: 7.0).animate(
-    CurvedAnimation(parent: _float, curve: Curves.easeInOut),
-  );
+  late final _floatOffset = Tween(
+    begin: -5.0,
+    end: 5.0,
+  ).animate(CurvedAnimation(parent: _float, curve: Curves.easeInOut));
 
   @override
   void dispose() {
@@ -254,7 +262,7 @@ class _SlideViewState extends State<_SlideView>
   Widget build(BuildContext context) {
     final colors = context.colors;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32),
+      padding: const EdgeInsets.symmetric(horizontal: 28),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -263,16 +271,16 @@ class _SlideViewState extends State<_SlideView>
             builder: (context, child) => Transform.translate(
               offset: Offset(0, _floatOffset.value),
               child: Transform.scale(
-                scale: _iconScale.value,
+                scale: _previewScale.value,
                 child: Opacity(
                   opacity: _entrance.value.clamp(0.0, 1.0),
                   child: child,
                 ),
               ),
             ),
-            child: _GlowIcon(icon: widget.slide.icon, colors: colors),
+            child: widget.slide.preview,
           ),
-          const SizedBox(height: 36),
+          const SizedBox(height: 32),
           FadeTransition(
             opacity: _textFade,
             child: SlideTransition(
@@ -311,49 +319,406 @@ class _SlideViewState extends State<_SlideView>
   }
 }
 
-/// A soft radial glow behind a gently gradient-filled circular badge —
-/// built from the same tokens the rest of the app already uses (mint,
-/// surface, cardShadow), just composed for a bit more depth than a flat
-/// icon badge.
-class _GlowIcon extends StatelessWidget {
-  final IconData icon;
-  final AppColors colors;
-  const _GlowIcon({required this.icon, required this.colors});
+/// Slide 1 preview: the real 5-face mood picker (see [MoodFaceWidget]),
+/// cycling which face is picked — plus a matching note — so the slide shows
+/// the actual tap-to-select motion instead of a frozen choice.
+class _MoodPreview extends StatefulWidget {
+  const _MoodPreview();
+
+  @override
+  State<_MoodPreview> createState() => _MoodPreviewState();
+}
+
+class _MoodPreviewState extends State<_MoodPreview> {
+  static const _sequence = [3, 4, 5, 4];
+  static const _notes = {
+    3: 'Feeling pretty okay today',
+    4: "Feeling good about today's progress",
+    5: 'Had a really great day!',
+  };
+
+  int _step = 0;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(milliseconds: 1700), (_) {
+      setState(() => _step = (_step + 1) % _sequence.length);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 220,
-      height: 220,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Container(
-            width: 220,
-            height: 220,
+    final colors = context.colors;
+    final selected = _sequence[_step];
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            for (var m = 1; m <= 5; m++)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 3),
+                child: MoodFaceWidget(
+                  value: m,
+                  isSelected: m == selected,
+                  size: m == selected ? 50 : 32,
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 280),
+          child: Container(
+            key: ValueKey(selected),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  colors.mint.withValues(alpha: 0.32),
-                  colors.mint.withValues(alpha: 0.0),
-                ],
+              color: colors.surface,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: colors.cardShadow,
+            ),
+            child: Text(
+              _notes[selected] ?? '',
+              style: GoogleFonts.nunito(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: colors.deep,
               ),
             ),
           ),
-          Container(
-            width: 132,
-            height: 132,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [colors.surface, colors.mintSoft],
+        ),
+      ],
+    );
+  }
+}
+
+/// Slide 2 preview: habit rows styled like the real Home habit list — mint
+/// fill once done, flat otherwise — with the last one actually toggling on
+/// a loop so the slide shows a habit being checked off, not just a list.
+class _HabitsPreview extends StatefulWidget {
+  const _HabitsPreview();
+
+  @override
+  State<_HabitsPreview> createState() => _HabitsPreviewState();
+}
+
+class _HabitsPreviewState extends State<_HabitsPreview> {
+  bool _readingDone = false;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(milliseconds: 2100), (_) {
+      setState(() => _readingDone = !_readingDone);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  Widget _row(
+    AppColors colors, {
+    required IconData icon,
+    required String name,
+    required bool done,
+  }) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 320),
+      curve: Curves.easeOutCubic,
+      width: 220,
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: done ? colors.mint : colors.surfaceFlat,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: done ? colors.onMint : colors.accent),
+          const SizedBox(width: 10),
+          Expanded(
+            child: AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 320),
+              style: GoogleFonts.nunito(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: done ? colors.onMint : colors.deep,
               ),
-              boxShadow: colors.cardShadow,
+              child: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
             ),
-            child: Icon(icon, size: 60, color: colors.accent),
+          ),
+          AnimatedScale(
+            duration: const Duration(milliseconds: 320),
+            curve: Curves.easeOutBack,
+            scale: done ? 1 : 0,
+            child: Icon(Icons.check_circle, size: 16, color: colors.onMint),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _row(colors, icon: Icons.local_drink, name: 'Drink water', done: true),
+        _row(
+          colors,
+          icon: Icons.directions_run,
+          name: 'Morning run',
+          done: true,
+        ),
+        _row(
+          colors,
+          icon: Icons.menu_book,
+          name: 'Read 20 pages',
+          done: _readingDone,
+        ),
+      ],
+    );
+  }
+}
+
+/// Slide 3 preview: a journal entry card laid out like the real Journal
+/// list item — icon badge, title/time, mood icon, tag chip, excerpt — with
+/// the tag cycling to hint that entries get tagged and organized.
+class _JournalPreview extends StatefulWidget {
+  const _JournalPreview();
+
+  @override
+  State<_JournalPreview> createState() => _JournalPreviewState();
+}
+
+class _JournalPreviewState extends State<_JournalPreview> {
+  static const _tags = ['Work', 'Reflection', 'Wins'];
+  int _tagIndex = 0;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(milliseconds: 1900), (_) {
+      setState(() => _tagIndex = (_tagIndex + 1) % _tags.length);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Container(
+      width: 240,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: colors.cardShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const IconBadge(icon: Icons.menu_book_outlined),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'A good day',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.nunito(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: colors.deep,
+                      ),
+                    ),
+                    Text(
+                      'Today, 9:40 PM',
+                      style: GoogleFonts.nunito(
+                        fontSize: 11,
+                        color: colors.accent,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 1),
+                child: FaIcon(moodIconFor(4), size: 15, color: moodColorFor(4)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 280),
+            transitionBuilder: (child, animation) => FadeTransition(
+              opacity: animation,
+              child: SizeTransition(
+                sizeFactor: animation,
+                axis: Axis.horizontal,
+                child: child,
+              ),
+            ),
+            child: Container(
+              key: ValueKey(_tagIndex),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: colors.surfaceFlat,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                _tags[_tagIndex],
+                style: GoogleFonts.nunito(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: colors.accent,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            "Finally wrapped up the project I've been stuck on for weeks.",
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.nunito(
+              fontSize: 12.5,
+              color: colors.accent,
+              fontWeight: FontWeight.w500,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Slide 4 preview: a weekly mood-trend bar chart matching the real one on
+/// the Statistics screen — bars colored by [moodColorFor], best day ringed —
+/// with today's bar (the last one) still moving, as if today's mood just
+/// got logged and the trend updated live.
+class _InsightsPreview extends StatefulWidget {
+  const _InsightsPreview();
+
+  @override
+  State<_InsightsPreview> createState() => _InsightsPreviewState();
+}
+
+class _InsightsPreviewState extends State<_InsightsPreview> {
+  static const _leadingMoods = [3, 4, 2, 4, 5, 4];
+  static const _todayValues = [3, 5];
+  static const _dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+  int _todayStep = 0;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(milliseconds: 1900), (_) {
+      setState(() => _todayStep = (_todayStep + 1) % _todayValues.length);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  Widget _bar(AppColors colors, int mood, {required bool isBest}) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 380),
+      curve: Curves.easeOutCubic,
+      width: 18,
+      height: 16.0 + (mood - 1) * 11.0,
+      decoration: BoxDecoration(
+        color: moodColorFor(mood),
+        borderRadius: BorderRadius.circular(8),
+        border: isBest ? Border.all(color: colors.deep, width: 2) : null,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final weekMoods = [..._leadingMoods, _todayValues[_todayStep]];
+    final bestValue = weekMoods.reduce((a, b) => a > b ? a : b);
+    return Container(
+      width: 250,
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: colors.cardShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Mood trend · this week',
+            style: GoogleFonts.nunito(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: colors.accent,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              for (final m in weekMoods)
+                _bar(colors, m, isBest: m == bestValue),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              for (final d in _dayLabels)
+                SizedBox(
+                  width: 18,
+                  child: Text(
+                    d,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.nunito(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                      color: colors.accent,
+                    ),
+                  ),
+                ),
+            ],
           ),
         ],
       ),
